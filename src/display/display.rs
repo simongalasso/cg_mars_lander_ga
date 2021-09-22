@@ -93,7 +93,7 @@ impl Display {
             }
         });
     }
-    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64) {
+    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64, power: f64) {
         let window_space = &self.window_space;
         let square = rectangle::square(0.0, 0.0, 50.0);
         let rotation = -ship_angle;
@@ -116,6 +116,8 @@ impl Display {
                 20.0, 0.0,
                 10.0, -30.0],
                 transform, gl);
+            let rect = [5.0, 5.0, 8.0, power * 8.0];
+            graphics::ellipse(WHITE, rect, transform, gl);
         });
     }
 

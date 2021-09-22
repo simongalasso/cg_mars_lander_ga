@@ -53,7 +53,7 @@ fn main() {
                 graphics::clear(GREY1, gl);
             });
             display.render_ground(&event, &map);
-            display.render_ship(&event, &ship_pos, angle);
+            display.render_ship(&event, &ship_pos, angle, power);
         }
         // if let Some(event) = e.update_args() {
         // }
