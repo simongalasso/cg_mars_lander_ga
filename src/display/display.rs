@@ -8,14 +8,16 @@ use piston::input::*;
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 use crate::display::display::graphics::Transformed;
-use graphics::*;
 
 use crate::maths::scale::*;
+
+use super::super::Ship;
 
 pub const GREY1: [f32; 4] = [0.11, 0.11, 0.11, 1.0];
 pub const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 pub const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+pub const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 
 pub const SCREEN_SCALE: f64 = 0.20;
 
@@ -37,7 +39,7 @@ impl Space {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pos {
     pub x: f64,
     pub y: f64,
@@ -93,9 +95,8 @@ impl Display {
             }
         });
     }
-    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64, power: f64) {
+    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64, power: f64, is_solution: bool) {
         let window_space = &self.window_space;
-        let square = rectangle::square(0.0, 0.0, 50.0);
         let rotation = -ship_angle;
         let (x, y) = (ship_pos.scale(window_space).x, ship_pos.scale(window_space).y);
         self.gl.draw(event.viewport(), |c, gl| {
@@ -104,15 +105,15 @@ impl Display {
                 .trans(x, y)
                 .rot_deg(rotation)
                 .trans(-10.0, 0.0);
-            graphics::line(WHITE, 0.7, [
+            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
                 0.0, 0.0,
                 20.0, 0.0],
                 transform, gl);
-            graphics::line(WHITE, 0.7, [
+            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
                 0.0, 0.0,
                 10.0, -30.0],
                 transform, gl);
-            graphics::line(WHITE, 0.7, [
+            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
                 20.0, 0.0,
                 10.0, -30.0],
                 transform, gl);
@@ -121,7 +122,16 @@ impl Display {
         });
     }
 
-    pub fn update(&mut self, ship_pos: &Pos) {
-        // do stuff
+    pub fn render_ray(&mut self, event: &RenderArgs, ship: &Ship) {
+        let window_space = &self.window_space;
+        self.gl.draw(event.viewport(), |c, gl| {
+            if ship.path.len() > 0 {
+                for i in 0..(ship.path.len() - 1) {
+                    let (x0, y0) = (ship.path[i].scale(window_space).x, ship.path[i].scale(window_space).y);
+                    let (x1, y1) = (ship.path[i + 1].scale(window_space).x, ship.path[i + 1].scale(window_space).y);
+                    graphics::line(if ship.is_solution { GREEN } else { RED }, 0.7, [x0, y0, x1, y1], c.transform, gl);
+                }
+            }
+        });
     }
 }
