@@ -25,11 +25,11 @@ struct Chromosome {
 }
 
 impl Chromosome {
-    fn new(length: usize) -> Self {
+    fn new() -> Self {
         let mut genes = vec![];
-        for i in 0..CHROMOSOME_SIZE {
-            let mut rand_angle = rand::thread_rng().gen_range(-15..=15);
-            let mut rand_power = rand::thread_rng().gen_range(-1..=1);
+        for _ in 0..CHROMOSOME_SIZE {
+            let rand_angle = rand::thread_rng().gen_range(-15..=15);
+            let rand_power = rand::thread_rng().gen_range(-1..=1);
             genes.push((rand_angle, rand_power));
         }
         return Self {
@@ -58,25 +58,27 @@ pub struct Ship {
     crash_pos: Pos,
     path: Vec<Pos>,
     is_best: bool,
-    is_elite: bool
+    is_elite: bool,
+    crash_zone_index: usize
 }
 
 impl Ship {
     fn new() -> Self {
         return Self {
-            chromosome: Chromosome::new(CHROMOSOME_SIZE as usize),
-            pos: Pos::from(2600.0, 2800.0),
+            chromosome: Chromosome::new(),
+            pos: Pos::from(6500.0, 2000.0),
             angle: 0.0,
             power: 0.0,
             h_speed: 0.0,
             v_speed: 0.0,
-            fuel: 550.0,
+            fuel: 1200.0,
             is_dead: false,
             is_solution: false,
             crash_pos: Pos::from(0.0, 0.0),
             path: vec![],
             is_best: false,
-            is_elite: false
+            is_elite: false,
+            crash_zone_index: 0
         }
     }
 
@@ -85,42 +87,19 @@ impl Ship {
     }
 
     fn simulate(&mut self, angle: f64, power: f64, gravity: f64) {
-        // self.angle += match angle {
-        //     target_angle if target_angle > 0.0 => (target_angle as f64 - self.angle).min(15.0),
-        //     target_angle => (target_angle - self.angle).max(-15.0)
-        // };
-        let mut clamped_angle = angle.max(-15.0).min(15.0);
+        let clamped_angle = angle.max(-15.0).min(15.0);
         self.angle += clamped_angle;
-        if self.angle > 90.0 {
-            self.angle = 90.0;
-        }
-        if self.angle < -90.0 {
-            self.angle = -90.0 ;
-        }
-        // self.power += match power {
-        //     target_thrust if target_thrust > 0.0 => (target_thrust as f64 - self.power).min(1.0),
-        //     target_thrust => (target_thrust - self.power).max(-1.0)
-        // };
-        let mut clamped_power = power.max(-1.0).min(1.0);
+        self.angle = self.angle.max(-90.0).min(90.0);
+        let clamped_power = power.max(-1.0).min(1.0);
         self.power += clamped_power;
-        if self.power > 4.0 {
-            self.power = 4.0;
-        }
-        if self.power < 0.0 {
-            self.power = 0.0 ;
-        }
+        self.power = self.power.max(0.0).min(4.0);
         self.fuel -= self.power;
-
         let v_acc = (self.power * (self.angle.to_radians()).cos()) - gravity;
-        // eprintln!("v_acc: {}", v_acc);
         self.pos.y = self.pos.y + self.v_speed + 0.5 * v_acc;
         self.v_speed += v_acc;
-
         let h_acc = self.power * (-self.angle.to_radians()).sin();
-        // eprintln!("h_acc: {}", h_acc);
         self.pos.x = self.pos.x + self.h_speed + 0.5 * h_acc;
         self.h_speed += h_acc;
-
         self.path.push(self.pos.clone());
     }
 
@@ -143,39 +122,10 @@ impl Ship {
     fn mutate(&mut self, mutation_rate: f64) {
         for i in 0..self.chromosome.genes.len() {
             if rand::thread_rng().gen_range(0.0..=1.0) < mutation_rate {
-                let mut rand_angle = rand::thread_rng().gen_range(-15..=15);
-                let mut rand_power = rand::thread_rng().gen_range(-1..=1);
+                let rand_angle = rand::thread_rng().gen_range(-15..=15);
+                let rand_power = rand::thread_rng().gen_range(-1..=1);
                 self.chromosome.genes[i] = (rand_angle, rand_power);
             }
-        }
-    }
-
-    pub fn calc_fitness(&mut self, lz_xmin: f64, lz_xmax: f64, lz_y: f64) {
-        if self.crash_pos.x < 0.0 || self.crash_pos.x >= 7000.0 || self.crash_pos.y < 0.0 || self.crash_pos.y >= 7000.0 {
-            self.chromosome.fitness = 1.0;
-            return;
-        }
-        let speed = ((self.h_speed * self.h_speed) + (self.v_speed * self.v_speed)).sqrt();
-        if self.crash_pos.x < lz_xmin || self.crash_pos.x > lz_xmax {
-            let norm_dist_x = (self.crash_pos.x - (lz_xmax + lz_xmin) / 2.0).abs() / 7000.0; // 0.0 to 1.0
-            let norm_dist_y = (self.crash_pos.y - lz_y).abs() / 3000.0; // 0.0 to 1.0
-            let norm_dist = (norm_dist_x + norm_dist_y) / 2.0;
-            let mut score = 100.0 - (norm_dist * 100.0);
-            let speed_score: f64 = 0.1 * (speed - 100.0).max(0.0);
-		    score -= speed_score;
-            self.chromosome.fitness = score; // 0 to 100
-        } else if !self.is_solution {
-            let mut x_score = 0.0;
-            if 20.0 < (self.h_speed).abs() {
-                x_score = ((self.h_speed).abs() - 20.0) / 2.0;
-            }
-            let mut y_score = 0.0;
-            if self.v_speed < -40.0 {
-                y_score = (-40.0 - self.v_speed) / 2.0;
-            }
-            self.chromosome.fitness = 200.0 - x_score - y_score; // 100 to 200
-        } else {
-            self.chromosome.fitness = 200.0 + (100.0 * self.fuel / 550.0); // 200 to 300
         }
     }
 }
@@ -185,7 +135,7 @@ impl Ship {
 /* --------------------------------------------------------- */
 
 const POPULATION_COUNT: usize = 100;
-const CHROMOSOME_SIZE: usize = 100;
+const CHROMOSOME_SIZE: usize = 500;
 const RAYS_MODE: i32 = 0;
 const SHIPS_MODE: i32 = 1;
 
@@ -210,30 +160,28 @@ impl Game {
             display_mode: RAYS_MODE,
             gravity: 3.711,
             map: vec![
-                Pos::from(0.0, 1000.0),
-                Pos::from(300.0, 1500.0),
-                Pos::from(350.0, 1400.0),
-                Pos::from(500.0, 2000.0),
-                Pos::from(800.0, 1800.0),
-                Pos::from(1000.0, 2500.0),
-                Pos::from(1200.0, 2100.0),
-                Pos::from(1500.0, 2400.0),
-                Pos::from(2000.0, 1000.0),
-                Pos::from(2200.0, 500.0),
-                Pos::from(2500.0, 100.0),
-                Pos::from(2900.0, 800.0),
-                Pos::from(3000.0, 500.0),
-                Pos::from(3200.0, 1000.0),
-                Pos::from(3500.0, 2000.0),
-                Pos::from(3800.0, 800.0),
-                Pos::from(4000.0, 200.0),
-                Pos::from(5000.0, 200.0),
-                Pos::from(5500.0, 1500.0),
-                Pos::from(6999.0, 2800.0)
+                Pos::from(0.0, 1800.0),
+                Pos::from(300.0, 1200.0),
+                Pos::from(1000.0, 1550.0),
+                Pos::from(2000.0, 1200.0),
+                Pos::from(2500.0, 1650.0),
+                Pos::from(3700.0, 220.0),
+                Pos::from(4700.0, 220.0),
+                Pos::from(4750.0, 1000.0),
+                Pos::from(4700.0, 1650.0),
+                Pos::from(4000.0, 1700.0),
+                Pos::from(3700.0, 1600.0),
+                Pos::from(3750.0, 1900.0),
+                Pos::from(4000.0, 2100.0),
+                Pos::from(4900.0, 2050.0),
+                Pos::from(5100.0, 1000.0),
+                Pos::from(5500.0, 500.0),
+                Pos::from(6200.0, 800.0),
+                Pos::from(6999.0, 600.0)
             ],
-            landing_zone_xmin: 4000.0,
-            landing_zone_xmax: 5000.0,
-            landing_zone_y: 200.0,
+            landing_zone_xmin: 3700.0,
+            landing_zone_xmax: 4700.0,
+            landing_zone_y: 220.0,
             ships: (0..POPULATION_COUNT).map(|_| Ship::new()).collect::<Vec<Ship>>(),
             turn: 0,
             paused: true,
@@ -295,6 +243,80 @@ impl Game {
         self.ships = new_ships;
         self.generation += 1;
     }
+
+    fn calc_min_dist(&self, crash_pos: &Pos, crash_zone_index: i32) -> f64 {
+        let mut landing_zone_index = 0;
+        for i in 0..(self.map.len() - 1) {
+            if self.map[i].x == self.landing_zone_xmin && self.map[i + 1].x == self.landing_zone_xmax && self.map[i].y == self.landing_zone_y {
+                landing_zone_index = i as i32;
+                break;
+            }
+        }
+
+        if crash_zone_index == landing_zone_index {
+            return 0.0;
+        }
+
+        let mut dir: i32 = match crash_zone_index > landing_zone_index {
+            true => -1, // crashed on right of landing zone
+            _ => 1// crashed on right of landing zone
+        };
+
+        let offset = match dir { // position on the crash_zone
+            -1 => { // going left
+                let dist_x = crash_pos.x - self.map[crash_zone_index as usize].x;
+                let dist_y = crash_pos.y - self.map[crash_zone_index as usize].y;
+                ((dist_x * dist_x) + (dist_y * dist_y)).sqrt()
+            },
+            _ => { // going right
+                let dist_x = crash_pos.x - self.map[crash_zone_index as usize + 1].x;
+                let dist_y = crash_pos.y - self.map[crash_zone_index as usize + 1].y;
+                ((dist_x * dist_x) + (dist_y * dist_y)).sqrt()
+            }
+        };
+
+        let mut dist = 0.0;
+        let mut prev = crash_zone_index;
+        let mut index = crash_zone_index + dir;
+        while index >= 0 && index < self.map.len() as i32 && index != landing_zone_index {
+            let dist_x = self.map[prev as usize].x - self.map[index as usize].x;
+            let dist_y = self.map[prev as usize].y - self.map[index as usize].y;
+            dist += ((dist_x * dist_x) + (dist_y * dist_y)).sqrt();
+            // eprintln!("{}", dist);
+            prev = index;
+            index += dir;
+        }
+        // eprintln!("---");
+        // eprintln!("{} + {} = {}", dist, offset, dist + offset);
+        return dist + offset;
+    }
+
+    fn calc_fitness(&mut self, ship_index: usize) {
+        if self.ships[ship_index].crash_pos.x < 0.0 || self.ships[ship_index].crash_pos.x >= 7000.0 || self.ships[ship_index].crash_pos.y < 0.0 || self.ships[ship_index].crash_pos.y >= 7000.0 {
+            self.ships[ship_index].chromosome.fitness = 1.0;
+            return;
+        }
+        let speed = ((self.ships[ship_index].h_speed * self.ships[ship_index].h_speed) + (self.ships[ship_index].v_speed * self.ships[ship_index].v_speed)).sqrt();
+        if self.ships[ship_index].crash_pos.x < self.landing_zone_xmin || self.ships[ship_index].crash_pos.x > self.landing_zone_xmax || self.ships[ship_index].crash_pos.y > self.landing_zone_y {
+            let dist = self.calc_min_dist(&self.ships[ship_index].crash_pos, self.ships[ship_index].crash_zone_index as i32) / ((7000.0 * 7000.0) as f64 + (3000.0 * 3000.0) as f64).sqrt(); // FIXME, can be longer (divide by the max dist of the generation)
+            let mut score = 100.0 - (dist * 100.0);
+            let speed_score: f64 = 0.1 * (speed - 100.0).max(0.0);
+		    score -= speed_score;
+            self.ships[ship_index].chromosome.fitness = score; // 0 to 100
+        } else if !self.ships[ship_index].is_solution {
+            let mut x_score = 0.0;
+            if 20.0 < (self.ships[ship_index].h_speed).abs() {
+                x_score = ((self.ships[ship_index].h_speed).abs() - 20.0) / 2.0;
+            }
+            let mut y_score = 0.0;
+            if self.ships[ship_index].v_speed < -40.0 {
+                y_score = (-40.0 - self.ships[ship_index].v_speed) / 2.0;
+            }
+            self.ships[ship_index].chromosome.fitness = 200.0 - x_score - y_score; // 100 to 200
+        } else {
+            self.ships[ship_index].chromosome.fitness = 200.0 + (100.0 * self.ships[ship_index].fuel / 550.0); // 200 to 300
+        }
+    }
     
     fn evaluate(&mut self) -> usize {
         let mut max_fitness: f64 = 0.0;
@@ -302,7 +324,7 @@ impl Game {
         let mut best = 0;
     
         for i in 0..POPULATION_COUNT {
-            self.ships[i].calc_fitness(self.landing_zone_xmin, self.landing_zone_xmax, self.landing_zone_y);
+            self.calc_fitness(i);
             if self.ships[i].chromosome.fitness > max_fitness {
                 max_fitness = self.ships[i].chromosome.fitness;
                 best = i;
@@ -365,6 +387,7 @@ fn main() {
                                             || ship.fuel == 0.0
                                         {
                                             ship.crash_pos = ship.pos.clone();
+                                            ship.crash_zone_index = index;
                                             if ship.pos.x > game.landing_zone_xmin && ship.pos.x < game.landing_zone_xmax && ship.angle == 0.0 && ship.v_speed > -40.0 && ship.h_speed.abs() <= 20.0 {
                                                 ship.is_solution = true;
                                             }
@@ -405,36 +428,42 @@ fn main() {
             // SHIPS_MODE => {
             //     if let Some(_event) = e.update_args() {
             //         if !game.paused || game.next_turn {
-            //             if game.turn == CHROMOSOME_SIZE || game.ships.iter().filter(|ship| !ship.is_dead).count() == 0 {
-            //                 game.ships.clear();
-            //                 let best = game.population.evaluate();
+            //             if game.turn == CHROMOSOME_SIZE as i32 || game.ships.iter().filter(|ship| !ship.is_dead).count() == 0 {
+            //                 let best = game.evaluate();
             //                 game.ships[best].is_best = true;
-            //                 game.population.generate();
-            //                 for _ in 0..game.population.chromosomes.len() {
-            //                     game.ships.push(Ship::new());
+            //                 let elites = game.get_elites();
+            //                 for ship in game.ships.iter_mut() {
+            //                     if elites.contains(ship) {
+            //                         ship.is_elite = true;
+            //                     }
+            //                 }
+            //                 to_display = game.ships.clone();
+            //                 game.generate();
+            //                 for i in 0..elites.len() {
+            //                     game.ships[i] = elites[i].clone();
+            //                     game.ships[i].is_elite = true;
             //                 }
             //                 game.turn = 0;
             //             } else {
-            //                 for (i, chromosome) in game.population.chromosomes.iter_mut().enumerate() {
-            //                     if !game.ships[i].is_dead {
-            //                         let instruction = chromosome.genes[game.turn as usize];
+            //                 for ship in game.ships.iter_mut() {
+            //                     if !ship.is_dead {
+            //                         let instruction = ship.chromosome.genes[game.turn as usize];
             //                         let angle: f64 = instruction.0 as f64;
             //                         let power: f64 = instruction.1 as f64;
-            //                         let prev_pos = game.ships[i].pos.clone();
-            //                         game.ships[i].simulate(angle, power, game.gravity);
+            //                         let prev_pos = ship.pos.clone();
+            //                         ship.simulate(angle, power, game.gravity);
             //                         for index in 0..(game.map.len() - 1) {
             //                             let a = game.map[index].clone();
             //                             let b = game.map[index + 1].clone();
-            //                             if do_intersect(&a, &b, &prev_pos, &game.ships[i].pos)
-            //                                 || game.ships[i].is_out_of_map()
-            //                                 || game.ships[i].fuel == 0.0
+            //                             if do_intersect(&a, &b, &prev_pos, &ship.pos)
+            //                                 || ship.is_out_of_map()
+            //                                 || ship.fuel == 0.0
             //                             {
-            //                                 game.ships[i].crash_pos = game.ships[i].pos.clone();
-            //                                 if game.ships[i].pos.x > game.landing_zone_xmin && game.ships[i].pos.x < game.landing_zone_xmax && game.ships[i].angle == 0.0 && game.ships[i].v_speed > -40.0 && game.ships[i].h_speed.abs() <= 20.0 {
-            //                                     game.ships[i].is_solution = true;
+            //                                 ship.crash_pos = ship.pos.clone();
+            //                                 if ship.pos.x > game.landing_zone_xmin && ship.pos.x < game.landing_zone_xmax && ship.angle == 0.0 && ship.v_speed > -40.0 && ship.h_speed.abs() <= 20.0 {
+            //                                     ship.is_solution = true;
             //                                 }
-            //                                 game.ships[i].is_dead = true;
-            //                                 chromosome.calc_fitness(&game.ships[i], game.landing_zone_xmin, game.landing_zone_xmax, game.landing_zone_y);
+            //                                 ship.is_dead = true;
             //                             }
             //                         }
             //                     }
