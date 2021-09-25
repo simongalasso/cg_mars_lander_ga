@@ -16,11 +16,13 @@ use super::super::Ship;
 pub const GREY1: [f32; 4] = [0.11, 0.11, 0.11, 1.0];
 pub const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-pub const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
-pub const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+pub const RED: [f32; 4] = [0.870, 0.152, 0.152, 1.0];
+pub const GREEN: [f32; 4] = [0.345, 0.901, 0.196, 1.0];
+pub const BLUE: [f32; 4] = [0.333, 0.623, 1.0, 1.0];
 
 pub const SCREEN_SCALE: f64 = 0.20;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Space {
     pub x0: f64,
     pub x1: f64,
@@ -39,7 +41,7 @@ impl Space {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pos {
     pub x: f64,
     pub y: f64,
@@ -129,7 +131,7 @@ impl Display {
                 for i in 0..(ship.path.len() - 1) {
                     let (x0, y0) = (ship.path[i].scale(window_space).x, ship.path[i].scale(window_space).y);
                     let (x1, y1) = (ship.path[i + 1].scale(window_space).x, ship.path[i + 1].scale(window_space).y);
-                    graphics::line(if ship.is_solution { GREEN } else { RED }, 0.7, [x0, y0, x1, y1], c.transform, gl);
+                    graphics::line(if ship.is_best { WHITE } else if ship.is_elite { BLUE } else if ship.is_solution { GREEN } else { RED }, 0.7, [x0, y0, x1, y1], c.transform, gl);
                 }
             }
         });
