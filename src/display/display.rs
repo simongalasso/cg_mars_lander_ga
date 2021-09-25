@@ -42,6 +42,12 @@ impl Display {
         };
     }
 
+    pub fn clear_window(&mut self, event: &RenderArgs) {
+        self.gl.draw(event.viewport(), |_context, gl| {
+            graphics::clear(GREY1, gl);
+        });
+    }
+
     pub fn render_ground(&mut self, event: &RenderArgs, map: &Vec<Pos>) {
         let window_space = &self.window_space;
         self.gl.draw(event.viewport(), |c, gl| {
@@ -55,7 +61,7 @@ impl Display {
             }
         });
     }
-    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64, power: f64, is_solution: bool) {
+    pub fn render_ship(&mut self, event: &RenderArgs, ship_pos: &Pos, ship_angle: f64, power: f64) {
         let window_space = &self.window_space;
         let rotation = -ship_angle;
         let (x, y) = (ship_pos.scale(window_space).x, ship_pos.scale(window_space).y);
@@ -65,15 +71,15 @@ impl Display {
                 .trans(x, y)
                 .rot_deg(rotation)
                 .trans(-10.0, 0.0);
-            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
+            graphics::line(WHITE, 0.7, [
                 0.0, 0.0,
                 20.0, 0.0],
                 transform, gl);
-            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
+            graphics::line(WHITE, 0.7, [
                 0.0, 0.0,
                 10.0, -30.0],
                 transform, gl);
-            graphics::line(if is_solution { GREEN } else { WHITE }, 0.7, [
+            graphics::line(WHITE, 0.7, [
                 20.0, 0.0,
                 10.0, -30.0],
                 transform, gl);

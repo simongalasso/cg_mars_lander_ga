@@ -137,7 +137,7 @@ pub struct Game {
     pub landing_zone_xmax: f64,
     pub landing_zone_y: f64,
     pub ships: Vec<Ship>,
-    pub turn: i32,
+    pub turn: usize,
     pub paused: bool,
     pub next_turn: bool,
     pub mutation_rate: f64,
