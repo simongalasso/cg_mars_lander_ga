@@ -131,7 +131,7 @@ impl Display {
                 for i in 0..(ship.path.len() - 1) {
                     let (x0, y0) = (ship.path[i].scale(window_space).x, ship.path[i].scale(window_space).y);
                     let (x1, y1) = (ship.path[i + 1].scale(window_space).x, ship.path[i + 1].scale(window_space).y);
-                    graphics::line(if ship.is_best { WHITE } else if ship.is_elite { BLUE } else if ship.is_solution { GREEN } else { RED }, 0.7, [x0, y0, x1, y1], c.transform, gl);
+                    graphics::line(if ship.is_best { WHITE } else if ship.is_solution { GREEN } else if ship.is_elite { BLUE } else { RED }, 0.7, [x0, y0, x1, y1], c.transform, gl);
                 }
             }
         });
