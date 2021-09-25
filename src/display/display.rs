@@ -9,59 +9,17 @@ use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 use crate::display::display::graphics::Transformed;
 
-use crate::maths::scale::*;
-
-use super::super::Ship;
+use crate::game::game::*;
+use crate::maths::pos::*;
+use crate::maths::space::*;
 
 pub const GREY1: [f32; 4] = [0.11, 0.11, 0.11, 1.0];
 pub const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
-pub const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 pub const RED: [f32; 4] = [0.870, 0.152, 0.152, 1.0];
 pub const GREEN: [f32; 4] = [0.345, 0.901, 0.196, 1.0];
 pub const BLUE: [f32; 4] = [0.333, 0.623, 1.0, 1.0];
 
 pub const SCREEN_SCALE: f64 = 0.20;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Space {
-    pub x0: f64,
-    pub x1: f64,
-    pub y0: f64,
-    pub y1: f64,
-}
-
-impl Space {
-    pub fn new(x0: f64, x1: f64, y0: f64, y1: f64) -> Self {
-        return Space {
-            x0: x0,
-            x1: x1,
-            y0: y0,
-            y1: y1
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Pos {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Pos {
-    pub fn from(x: f64, y: f64) -> Self {
-        return Pos {
-            x: x,
-            y: y
-        }
-    }
-
-    pub fn scale(&self, space: &Space) -> Self {
-        return Pos {
-            x: scale(self.x, 0.0, 7000.0, space.x0, space.x1),
-            y: scale(self.y, 0.0, 3000.0, space.y0, space.y1)
-        }
-    }
-}
 
 pub struct Display {
     pub window_space: Space,
