@@ -61,12 +61,12 @@ impl Ship {
     fn new() -> Self {
         return Self {
             chromosome: Chromosome::new(),
-            pos: Pos::from(500.0, 2700.0),
-            angle: -90.0,
+            pos: Pos::from(6500.0, 2800.0),
+            angle: 90.0,
             power: 0.0,
-            h_speed: 100.0,
+            h_speed: -90.0,
             v_speed: 0.0,
-            fuel: 800.0,
+            fuel: 750.0,
             is_dead: false,
             is_solution: false,
             crash_pos: Pos::from(0.0, 0.0),
@@ -147,6 +147,8 @@ pub struct Game {
     pub landing_zone_xmin: f32,
     pub landing_zone_xmax: f32,
     pub landing_zone_y: f32,
+    pub landing_zone_index: usize,
+    pub surface_length: i32,
     pub ships: Vec<Ship>,
     pub turn: usize,
     pub paused: bool,
@@ -164,87 +166,37 @@ impl Game {
             gravity: 3.711,
             map: vec![Pos {
                 x: 0.0,
-                y: 1000.0,
-            },
-            Pos {
-                x: 300.0,
-                y: 1500.0,
-            },
-            Pos {
-                x: 350.0,
-                y: 1400.0,
-            },
-            Pos {
-                x: 500.0,
-                y: 2000.0,
-            },
-            Pos {
-                x: 800.0,
-                y: 1800.0,
-            },
-            Pos {
-                x: 1000.0,
-                y: 2500.0,
-            },
-            Pos {
-                x: 1200.0,
-                y: 2100.0,
-            },
-            Pos {
-                x: 1500.0,
-                y: 2400.0,
-            },
-            Pos {
-                x: 2000.0,
-                y: 1000.0,
-            },
-            Pos {
-                x: 2200.0,
-                y: 500.0,
-            },
-            Pos {
-                x: 2500.0,
                 y: 100.0,
             },
             Pos {
-                x: 2900.0,
-                y: 800.0,
-            },
-            Pos {
-                x: 3000.0,
+                x: 1000.0,
                 y: 500.0,
             },
             Pos {
-                x: 3200.0,
-                y: 1000.0,
-            },
-            Pos {
-                x: 3500.0,
-                y: 2000.0,
-            },
-            Pos {
-                x: 3800.0,
-                y: 800.0,
-            },
-            Pos {
-                x: 4000.0,
-                y: 200.0,
-            },
-            Pos {
-                x: 5000.0,
-                y: 200.0,
-            },
-            Pos {
-                x: 5500.0,
+                x: 1500.0,
                 y: 1500.0,
             },
             Pos {
+                x: 3000.0,
+                y: 1000.0,
+            },
+            Pos {
+                x: 4000.0,
+                y: 150.0,
+            },
+            Pos {
+                x: 5500.0,
+                y: 150.0,
+            },
+            Pos {
                 x: 6999.0,
-                y: 2800.0,
+                y: 800.0,
             },],
             landing_zone_xmin: 4000.0,
-            landing_zone_xmax: 5000.0,
-            landing_zone_y: 200.0,
+            landing_zone_xmax: 5500.0,
+            landing_zone_y: 150.0,
+            landing_zone_index: 4,
+            surface_length: 0,
             ships: (0..POPULATION_COUNT).map(|_| Ship::new()).collect::<Vec<Ship>>(),
             turn: 0,
             paused: true,
@@ -310,41 +262,33 @@ impl Game {
         self.generation += 1;
     }
 
-    fn calc_min_dist(&self, crash_pos: &Pos, crash_zone_index: i32) -> f32 {
-        let mut landing_zone_index = 0;
-        for i in 0..(self.map.len() - 1) {
-            if self.map[i].x == self.landing_zone_xmin && self.map[i + 1].x == self.landing_zone_xmax && self.map[i].y == self.landing_zone_y {
-                landing_zone_index = i as i32;
-                break;
-            }
-        }
-
-        if crash_zone_index == landing_zone_index {
+    fn calc_min_dist(&self, crash_pos: &Pos, crash_zone_index: usize) -> f32 {
+        if crash_zone_index == self.landing_zone_index {
             return 0.0;
         }
 
-        let dir: i32 = match crash_zone_index > landing_zone_index {
+        let dir: i32 = match crash_zone_index > self.landing_zone_index {
             true => -1, // crashed on right of landing zone
             _ => 1// crashed on right of landing zone
         };
 
         let offset = match dir { // position on the crash_zone
             -1 => { // going left
-                let dist_x = crash_pos.x - self.map[crash_zone_index as usize].x;
-                let dist_y = crash_pos.y - self.map[crash_zone_index as usize].y;
+                let dist_x = crash_pos.x - self.map[crash_zone_index].x;
+                let dist_y = crash_pos.y - self.map[crash_zone_index].y;
                 ((dist_x * dist_x) + (dist_y * dist_y)).sqrt()
             },
             _ => { // going right
-                let dist_x = crash_pos.x - self.map[crash_zone_index as usize + 1].x;
-                let dist_y = crash_pos.y - self.map[crash_zone_index as usize + 1].y;
+                let dist_x = crash_pos.x - self.map[crash_zone_index + 1].x;
+                let dist_y = crash_pos.y - self.map[crash_zone_index + 1].y;
                 ((dist_x * dist_x) + (dist_y * dist_y)).sqrt()
             }
         };
 
         let mut dist = 0.0;
-        let mut prev = crash_zone_index;
-        let mut index = crash_zone_index + dir;
-        while index >= 0 && index < self.map.len() as i32 && index != landing_zone_index {
+        let mut prev: i32 = crash_zone_index as i32;
+        let mut index: i32 = crash_zone_index as i32 + dir;
+        while index >= 0 && index < self.map.len() as i32 && index != self.landing_zone_index as i32 {
             let dist_x = self.map[prev as usize].x - self.map[index as usize].x;
             let dist_y = self.map[prev as usize].y - self.map[index as usize].y;
             dist += ((dist_x * dist_x) + (dist_y * dist_y)).sqrt();
@@ -363,8 +307,8 @@ impl Game {
             return;
         }
         let speed = ((self.ships[ship_index].h_speed * self.ships[ship_index].h_speed) + (self.ships[ship_index].v_speed * self.ships[ship_index].v_speed)).sqrt();
-        if self.ships[ship_index].crash_pos.x < self.landing_zone_xmin || self.ships[ship_index].crash_pos.x > self.landing_zone_xmax || self.ships[ship_index].crash_pos.y > self.landing_zone_y {
-            let dist = self.calc_min_dist(&self.ships[ship_index].crash_pos, self.ships[ship_index].crash_zone_index as i32) / ((7000.0 * 7000.0) as f32 + (3000.0 * 3000.0) as f32).sqrt(); // FIXME, can be longer (divide by the max dist of the generation)
+        if self.ships[ship_index].crash_zone_index != self.landing_zone_index {
+            let dist = self.calc_min_dist(&self.ships[ship_index].crash_pos, self.ships[ship_index].crash_zone_index) / self.surface_length as f32;
             let mut score = 100.0 - (dist * 100.0);
             let speed_score: f32 = 0.1 * (speed - 100.0).max(0.0);
 		    score -= speed_score;
@@ -386,7 +330,7 @@ impl Game {
     
     pub fn evaluate(&mut self) -> usize {
         let mut max_fitness: f32 = 0.0;
-        // let mut total_fitness: f32 = 0.0;
+        let mut total_fitness: f32 = 0.0;
         let mut best = 0;
     
         for i in 0..POPULATION_COUNT {
@@ -395,10 +339,10 @@ impl Game {
                 max_fitness = self.ships[i].chromosome.fitness;
                 best = i;
             }
-            // total_fitness += self.ships[i].chromosome.fitness;
+            total_fitness += self.ships[i].chromosome.fitness;
         }
-        // let fitness_average: i32 = (total_fitness / POPULATION_COUNT as f32) as i32;
-        // println!("gen: {} | av: {} | max: {}", self.generation, fitness_average, max_fitness as i32);
+        let fitness_average: i32 = (total_fitness / POPULATION_COUNT as f32) as i32;
+        println!("gen: {} | av: {} | max: {}", self.generation, fitness_average, max_fitness as i32);
         return best;
     }
 }

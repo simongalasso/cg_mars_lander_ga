@@ -69,6 +69,11 @@ fn run_genetic(game: &mut Game) {
 fn main() {
     let mut display: Display = Display::setup(7000.0 * SCREEN_SCALE, 3000.0 * SCREEN_SCALE);
     let mut game: Game = Game::setup();
+    for i in 0..(game.map.len() - 1) {
+        let x_length = game.map[i].x - game.map[i + 1].x;
+        let y_length = game.map[i].y - game.map[i + 1].y;
+        game.surface_length += ((x_length * x_length) + (y_length * y_length)).sqrt() as i32;
+    }
 
     let mut duration: u128 = 0;
     let mut events = Events::new(EventSettings::new());
@@ -80,7 +85,8 @@ fn main() {
                     let start_time = Instant::now();
                     run_genetic(&mut game);
                     duration += start_time.elapsed().as_millis();
-                    if duration > 900 {
+                    if duration > 990 {
+                    // if duration > 10000 {
                         game.search_ended = true;
                         game.paused = true;
                         game.turn = 0;
