@@ -3,12 +3,12 @@ use super::space::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pos {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Pos {
-    pub fn from(x: f64, y: f64) -> Self {
+    pub fn from(x: f32, y: f32) -> Self {
         return Pos {
             x: x,
             y: y

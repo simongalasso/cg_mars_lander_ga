@@ -8,7 +8,7 @@ fn on_segment(p: &Pos, q: &Pos, r: &Pos) -> bool {
 }
 
 fn orientation(p: &Pos, q: &Pos, r: &Pos) -> i32 {
-    let val: f64 = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    let val: f32 = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
     if val == 0.0 {
         return 0;
     }
@@ -32,6 +32,6 @@ pub fn do_intersect(p1: &Pos, q1: &Pos, p2: &Pos, q2: &Pos) -> bool {
     return false;
 }
 
-pub fn scale(value: f64, from1: f64, to1: f64, from2: f64, to2: f64,) -> f64 {
+pub fn scale(value: f32, from1: f32, to1: f32, from2: f32, to2: f32,) -> f32 {
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
 }

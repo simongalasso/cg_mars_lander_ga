@@ -1,13 +1,13 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Space {
-    pub x0: f64,
-    pub x1: f64,
-    pub y0: f64,
-    pub y1: f64,
+    pub x0: f32,
+    pub x1: f32,
+    pub y0: f32,
+    pub y1: f32,
 }
 
 impl Space {
-    pub fn new(x0: f64, x1: f64, y0: f64, y1: f64) -> Self {
+    pub fn new(x0: f32, x1: f32, y0: f32, y1: f32) -> Self {
         return Space {
             x0: x0,
             x1: x1,

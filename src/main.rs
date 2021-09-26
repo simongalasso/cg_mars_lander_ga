@@ -35,8 +35,8 @@ fn run_genetic(game: &mut Game) {
         for ship in game.ships.iter_mut() {
             if !ship.is_dead {
                 let instruction = ship.chromosome.genes[game.turn];
-                let angle: f64 = instruction.0 as f64;
-                let power: f64 = instruction.1 as f64;
+                let angle: f32 = instruction.0 as f32;
+                let power: f32 = instruction.1 as f32;
                 let prev_pos = ship.pos.clone();
                 ship.simulate(angle, power, game.gravity);
                 for index in 0..(game.map.len() - 1) {
@@ -84,7 +84,17 @@ fn main() {
                         game.search_ended = true;
                         game.paused = true;
                         game.turn = 0;
-                        eprintln!("generations: {}", game.generation)
+                        eprintln!("generations: {}", game.generation);
+                        // let best_ship: &Ship = game.best_ship.as_ref().unwrap();
+                        // for i in 0..best_ship.path.len() {
+                        //     let mut next_angle = 0;
+                        //     let mut next_power = 0;
+                        //     for j in 0..(i + 1) {
+                        //         next_angle = (next_angle + (best_ship.chromosome.genes[j].0).min(15).max(-15)).min(90).max(-90);
+                        //         next_power = (next_power + (best_ship.chromosome.genes[j].1).min(1).max(-1)).min(4).max(0);
+                        //     }
+                        //     eprintln!("pos: {:?}, angle: {}, power: {}", best_ship.path[i], next_angle as f32, next_power as f32);
+                        // }
                     }
                 } else {
                     game.turn += 1;
@@ -98,12 +108,20 @@ fn main() {
             if game.display_mode == RAYS_MODE {
                 if !game.search_ended {
                     for ship in game.ships.iter() {
-                        display.render_ray(&event, &ship);
+                        display.render_ray(&event, &ship, if ship.is_best { WHITE } else if ship.is_solution { GREEN } else if ship.is_elite { BLUE } else { RED });
                     }
                 } else {
                     let best_ship: &Ship = game.best_ship.as_ref().unwrap();
                     if game.turn < best_ship.path.len() {
-                        display.render_ship(&event, &best_ship.path[game.turn], best_ship.chromosome.genes[game.turn].0 as f64, best_ship.chromosome.genes[game.turn].1 as f64);
+                        let mut next_angle = -90;
+                        let mut next_power = 0;
+                        for i in 0..(game.turn + 1) {
+                            next_angle = (next_angle + (best_ship.chromosome.genes[i].0).min(15).max(-15)).min(90).max(-90);
+                            next_power = (next_power + (best_ship.chromosome.genes[i].1).min(1).max(-1)).min(4).max(0);
+                        }
+                        display.render_ray(&event, &best_ship, GREEN);
+                        // eprintln!("pos: {:?}, angle: {}, power: {}", best_ship.path[game.turn], next_angle as f32, next_power as f32);
+                        display.render_ship(&event, &best_ship.path[game.turn], next_angle as f32, next_power as f32);
                     } else {
                         game.turn = 0;
                     }
