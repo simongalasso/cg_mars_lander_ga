@@ -53,8 +53,8 @@ For example, the demo gif above is represented by :
 ```
 
 ### Commands
-<p><kbd>Return</kbd> | launch the sequence</p>
-<p><kbd>spacebar</kbd> | pause the autorotation</p>
+<p><kbd>spacebar</kbd> | play / pause</p>
+<p><kbd>right</kbd> | next turn</p>
 <p><kbd>ESC</kbd> | close the visualisator</p>
 
 ---
