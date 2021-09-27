@@ -324,7 +324,7 @@ impl Game {
             }
             self.ships[ship_index].chromosome.fitness = 200.0 - x_score - y_score; // 100 to 200
         } else {
-            self.ships[ship_index].chromosome.fitness = 200.0 + (100.0 * self.ships[ship_index].fuel / 550.0); // 200 to 300
+            self.ships[ship_index].chromosome.fitness = 200.0 + (100.0 * self.ships[ship_index].fuel / self.level_data.fuel); // 200 to 300
         }
     }
     
