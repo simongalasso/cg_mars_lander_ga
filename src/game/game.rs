@@ -38,7 +38,7 @@ impl Chromosome {
 /* -   SHIP   ---------------------------------------------- */
 /* --------------------------------------------------------- */
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Ship {
     pub chromosome: Chromosome,
     pub pos: Pos,
@@ -53,7 +53,8 @@ pub struct Ship {
     pub path: Vec<Pos>,
     pub is_best: bool,
     pub is_elite: bool,
-    pub crash_zone_index: usize
+    pub crash_zone_index: usize,
+    pub is_out: bool
 }
 
 impl Ship {
@@ -72,7 +73,8 @@ impl Ship {
             path: vec![],
             is_best: false,
             is_elite: false,
-            crash_zone_index: 0
+            crash_zone_index: 0,
+            is_out: false
         }
     }
 
@@ -84,10 +86,15 @@ impl Ship {
         let clamped_angle = angle.max(-15.0).min(15.0);
         self.angle += clamped_angle;
         self.angle = self.angle.max(-90.0).min(90.0);
-        let clamped_power = power.max(-1.0).min(1.0);
-        self.power += clamped_power;
-        self.power = self.power.max(0.0).min(4.0);
-        self.fuel -= self.power;
+
+        if self.fuel > 0.0 {
+            let clamped_power = power.max(-1.0).min(1.0);
+            self.power += clamped_power;
+            self.power = self.power.max(0.0).min(4.0);
+            self.fuel -= self.power;
+        } else {
+            self.power = 0.0;
+        }
         let v_acc = (self.power * (self.angle.to_radians()).cos()) - gravity;
         self.pos.y = self.pos.y + self.v_speed + 0.5 * v_acc;
         self.v_speed += v_acc;
@@ -223,7 +230,7 @@ impl Game {
         return elites;
     }
     
-    pub fn generate(&mut self) {
+    pub fn generate(&mut self, elites: &Vec<Ship>) {
         let mut new_ships: Vec<Ship> = vec![];
         let mut fitness_sum: f32 = 0.0;
         for i in 0..POPULATION_COUNT {
@@ -246,6 +253,10 @@ impl Game {
             childs[1].mutate(self.mutation_rate);
             new_ships.push(childs[0].clone());
             new_ships.push(childs[1].clone());
+        }
+        for i in 0..elites.len() { // FIXME, to refactor
+            new_ships[i] = elites[i].clone();
+            new_ships[i].is_elite = true;
         }
         self.ships = new_ships;
         self.generation += 1;
@@ -291,7 +302,7 @@ impl Game {
     }
 
     fn calc_fitness(&mut self, ship_index: usize) {
-        if self.ships[ship_index].crash_pos.x < 0.0 || self.ships[ship_index].crash_pos.x >= 7000.0 || self.ships[ship_index].crash_pos.y < 0.0 || self.ships[ship_index].crash_pos.y >= 7000.0 {
+        if self.ships[ship_index].is_out {
             self.ships[ship_index].chromosome.fitness = 1.0;
             return;
         }

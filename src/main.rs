@@ -23,16 +23,8 @@ fn run_genetic(game: &mut Game) {
     let best = game.evaluate();
     game.ships[best].is_best = true;
     let elites = game.get_elites();
-    for ship in game.ships.iter_mut() {
-        if elites.contains(ship) {
-            ship.is_elite = true;
-        }
-    }
-    game.generate();
-    for i in 0..elites.len() {
-        game.ships[i] = elites[i].clone();
-        game.ships[i].is_elite = true;
-    }
+    game.generate(&elites);
+
     game.turn = 0;
     while game.turn < CHROMOSOME_SIZE && game.ships.iter().filter(|ship| !ship.is_dead).count() > 0 {
         for ship in game.ships.iter_mut() {
@@ -45,19 +37,20 @@ fn run_genetic(game: &mut Game) {
                 for index in 0..(game.map.len() - 1) {
                     let a = game.map[index].clone();
                     let b = game.map[index + 1].clone();
-                    if do_intersect(&a, &b, &prev_pos, &ship.pos)
-                        || ship.is_out_of_map()
-                        || ship.fuel == 0.0
-                    {
-                        ship.crash_pos = prev_pos.clone();
+
+                    if do_intersect(&a, &b, &prev_pos, &ship.pos) {
+                        ship.crash_pos = find_intersection_point(&a, &b, &prev_pos, &ship.pos);
                         ship.crash_zone_index = index;
-                        if do_intersect(&a, &b, &prev_pos, &ship.pos) && index == game.landing_zone_index && ship.angle == 0.0 && ship.v_speed >= -40.0 && ship.h_speed.abs() <= 20.0
+                        if ship.crash_zone_index == game.landing_zone_index && ship.angle == 0.0 && ship.v_speed >= -40.0 && ship.h_speed.abs() <= 20.0
                         {
                             if game.best_ship.is_none() || ship.chromosome.fitness > game.best_ship.as_ref().unwrap().chromosome.fitness {
                                 game.best_ship = Some(ship.clone());
                             }
                             ship.is_solution = true;
                         }
+                        ship.is_dead = true;
+                    } else if ship.is_out_of_map() {
+                        ship.is_out = true;
                         ship.is_dead = true;
                     }
                 }
@@ -86,6 +79,7 @@ fn main() {
                             run_genetic(&mut game);
                             duration += start_time.elapsed().as_millis();
                             if duration > 990 {
+                                eprintln!("OK");
                             // if duration > 10000 {
                                 game.search_ended = true;
                                 game.paused = true;
@@ -115,6 +109,12 @@ fn main() {
                         if !game.search_ended {
                             for ship in game.ships.iter() {
                                 display.render_ray(&event, &ship, if ship.is_best { WHITE } else if ship.is_solution { GREEN } else if ship.is_elite { BLUE } else { RED });
+                            }
+                            match game.best_ship {
+                                Some(ref ship) => {
+                                    display.render_ray(&event, ship, GOLD);
+                                },
+                                None => {}
                             }
                         } else {
                             let best_ship: &Ship = game.best_ship.as_ref().unwrap();

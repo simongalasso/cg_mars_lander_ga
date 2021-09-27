@@ -18,6 +18,7 @@ pub const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub const RED: [f32; 4] = [0.870, 0.152, 0.152, 1.0];
 pub const GREEN: [f32; 4] = [0.345, 0.901, 0.196, 1.0];
 pub const BLUE: [f32; 4] = [0.333, 0.623, 1.0, 1.0];
+pub const GOLD: [f32; 4] = [1.0, 0.843, 0.0, 1.0];
 
 pub const SCREEN_SCALE: f32 = 0.20;
 
