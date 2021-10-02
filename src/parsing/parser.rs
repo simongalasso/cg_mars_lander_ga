@@ -30,7 +30,6 @@ pub fn parse_file(dataset_file: &str) -> Result<LevelData, String> {
     let mut input_line = String::new();
     lines.read_line(&mut input_line).unwrap();
     let inputs = input_line.trim_end().split(" ").collect::<Vec<_>>();
-    eprintln!("inputs: {:?}", inputs);
     let x: f32 = parse_input!(inputs[0], f32);
     let y: f32 = parse_input!(inputs[1], f32);
 
@@ -50,14 +49,6 @@ pub fn parse_file(dataset_file: &str) -> Result<LevelData, String> {
         let values = input.split(" ").collect::<Vec<_>>();
         Pos::from(parse_input!(values[0], f32), parse_input!(values[1], f32))
     }).collect::<Vec<Pos>>();
-
-    eprintln!("x: {}, y: {}", x, y);
-    eprintln!("angle: {}", angle);
-    eprintln!("power: {}", power);
-    eprintln!("h_speed: {}", h_speed);
-    eprintln!("v_speed: {}", v_speed);
-    eprintln!("fuel: {}", fuel);
-    eprintln!("map: {:#?}", map);
 
     return Ok(LevelData {
         pos: Pos::from(x, y),

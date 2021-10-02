@@ -45,6 +45,6 @@ pub fn find_intersection_point(a: &Pos, b: &Pos, c: &Pos, d: &Pos) -> Pos {
     return Pos::from(x, y);
 }
 
-pub fn scale(value: f32, from1: f32, to1: f32, from2: f32, to2: f32,) -> f32 {
+pub fn scale(value: f32, from1: f32, to1: f32, from2: f32, to2: f32) -> f32 {
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
 }
